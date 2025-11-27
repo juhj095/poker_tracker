@@ -33,8 +33,8 @@ def get_session_id_by_code(cursor, sessioncode):
 
 def insert_hand(cursor, data):
     query = """
-        INSERT INTO Hand (session_id, gamecode, startdate)
-        VALUES (%s, %s, %s)
+        INSERT INTO Hand (session_id, gamecode, startdate, showdown)
+        VALUES (%s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE gamecode = gamecode
     """
     cursor.execute(query, data)

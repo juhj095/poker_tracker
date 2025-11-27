@@ -33,6 +33,5 @@ def main():
     connection.close()
     print("🏁 All files processed")
 
-
 if __name__ == "__main__":
     main()

@@ -24,3 +24,24 @@ def calculate_profit(hero_name, players):
         profit = -(min(hero_bet, max_other_bet))
 
     return profit
+
+def went_to_showdown(game):
+    # All players that were dealt in this hand
+    all_players = {p.attrib["name"] for p in game.findall("general/players/player")}
+    total_players = len(all_players)
+
+    # All players who folded
+    folded_players = {
+        a.attrib["player"]
+        for a in game.findall(".//action")
+        if a.attrib.get("type") == "0"  # type 0 = fold
+    }
+
+    # Count how many are left
+    remaining_players = total_players - len(folded_players)
+
+    # If everyone except one folded → no showdown
+    if remaining_players <= 1:
+        return False
+    else:
+        return True

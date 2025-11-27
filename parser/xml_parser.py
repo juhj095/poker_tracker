@@ -14,11 +14,11 @@ def xml_parser(cursor, xml_path):
     existing_session_id = get_session_id_by_code(cursor, sessioncode)
 
     if existing_session_id:
-        print(f"Session {sessioncode} already exists in the database. Skipping import.")
+        print(f"Session {sessioncode} already exists in the database. Skipping import for {os.path.basename(xml_path)}\n")
 
     # TODO better way to check if cash game for more currencies
     elif "€" not in gametype:
-        print("Cash games only. Skipping import.")
+        print(f"Cash games only. Skipping import for {os.path.basename(xml_path)}\n")
 
     else:
         # Insert session
@@ -58,7 +58,8 @@ def xml_parser(cursor, xml_path):
             hand_id = insert_hand(cursor, (
                 session_id,
                 hand_data["gamecode"],
-                hand_data["startdate"]
+                hand_data["startdate"],
+                hand_data["showdown"]
             ))
 
             player_id_map = {}
