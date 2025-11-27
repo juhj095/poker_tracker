@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Hand` (
   `session_id` INT NOT NULL,
   `startdate` TIMESTAMP NOT NULL,
   `profit` DECIMAL(10,2) NULL,
+  `showdown` TINYINT NULL,
   PRIMARY KEY (`hand_id`, `session_id`),
   UNIQUE INDEX `hand_id_UNIQUE` (`hand_id` ASC) VISIBLE,
   INDEX `fk_Hand_Session_idx` (`session_id` ASC) VISIBLE,
