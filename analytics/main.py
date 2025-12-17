@@ -17,11 +17,11 @@ def main():
 
     # DB Query
     connection = get_connection()
-    query= profit_over_time( # TODO params
+    query, params = profit_over_time(
         start_date=start_date,
         end_date=end_date
     )
-    df = pd.read_sql(query, connection) # TODO params=params
+    df = pd.read_sql(query, connection, params=params)
     connection.close()
 
     if df.empty:
