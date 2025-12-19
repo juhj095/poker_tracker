@@ -1,7 +1,9 @@
 import streamlit as st
 import plotly.graph_objects as go
-from db_helpers import get_connection, profit_over_time
+from streamlit_plotly_events import plotly_events
 import pandas as pd
+from load_data import load_profit_data
+from utils import y_axis
 
 def main():
     st.set_page_config(page_title="Poker Tracker", layout="wide")
@@ -15,119 +17,94 @@ def main():
     start_date = st.sidebar.date_input("Start date", value=None)
     end_date = st.sidebar.date_input("End date", value=None)
 
-    # DB Query
-    connection = get_connection()
-    query, params = profit_over_time(
-        start_date=start_date,
-        end_date=end_date
-    )
-    df = pd.read_sql(query, connection, params=params)
-    connection.close()
+    df = load_profit_data(start_date, end_date)
 
     if df.empty:
-        st.warning("No data found — check your database or date filters.")
+        st.warning("No data found — check your database or filters.")
+        return
+
+    # Graph unit
+    if unit == "€":
+        total = df["cum_total"]
+        show = df["cum_show"]
+        noShow = df["cum_noshow"]
+        label = "Profit (€)"
     else:
-        df["startdate"] = pd.to_datetime(df["startdate"])
+        total = df["cum_total_bb"]
+        show = df["cum_show_bb"]
+        noShow = df["cum_noshow_bb"]
+        label = "Profit (bb)"
 
-        # Sort and compute cumulative lines
-        df = df.sort_values(["startdate", "hand_id"]).reset_index(drop=True)
-        df["show_profit"] = df["profit"].where(df["showdown"] == 1, 0.0)
-        df["noshow_profit"] = df["profit"].where(df["showdown"] == 0, 0.0)
-        df["cum_total"] = df["profit"].cumsum()
-        df["cum_show"] = df["show_profit"].cumsum()
-        df["cum_noshow"] = df["noshow_profit"].cumsum()
+    # Plot
+    fig = go.Figure()
 
-         # BB equivalents
-        df["profit_bb"] = df["profit"] / df["bigblind"]
-        df["show_profit_bb"] = df["show_profit"] / df["bigblind"]
-        df["noshow_profit_bb"] = df["noshow_profit"] / df["bigblind"]
+    hands_played_list = list(range(len(df) + 1))
 
-        df["cum_total_bb"] = df["profit_bb"].cumsum()
-        df["cum_show_bb"] = df["show_profit_bb"].cumsum()
-        df["cum_noshow_bb"] = df["noshow_profit_bb"].cumsum()
+    fig.add_trace(go.Scatter(
+        x = hands_played_list,
+        y = y_axis(total),
+        name = "Total",
+        mode = "lines+markers",
+        customdata = [None] + df["gamecode"].tolist(),
+        line = dict(color="green"),
+        marker = dict(opacity=0),
+    ))
 
-        # Start all lines from 0
-        df_plot = pd.concat([
-            pd.DataFrame([{
-                "cum_total": 0,
-                "cum_show": 0,
-                "cum_noshow": 0,
-                "cum_total_bb": 0,
-                "cum_show_bb": 0,
-                "cum_noshow_bb": 0
-            }]),
-            df
-        ], ignore_index=True)
+    if show_showdown:
+        fig.add_trace(go.Scatter(
+            x = hands_played_list,
+            y = y_axis(show),
+            name = "Showdown",
+            line = dict(color="blue"),
+        ))
+        fig.add_trace(go.Scatter(
+            x = hands_played_list,
+            y = y_axis(noShow),
+            name  = "Non-Showdown",
+            line = dict(color="red"),
+        ))
 
-        # Graph unit
-        if unit == "€":
-            y_total = df_plot["cum_total"]
-            y_show = df_plot["cum_show"]
-            y_noShow = df_plot["cum_noshow"]
-            y_label = "Profit (€)"
-        else:
-            y_total = df_plot["cum_total_bb"]
-            y_show = df_plot["cum_show_bb"]
-            y_noShow = df_plot["cum_noshow_bb"]
-            y_label = "Profit (bb)"
+    fig.update_xaxes(
+        range = [0, len(df)],
+        tickformat = ",d"
+    )
 
-        # Plot
-        fig = go.Figure()
+    fig.update_yaxes(tickformat=",.2f")
 
-        fig.add_trace(
-            go.Scatter(
-                x=df_plot.index,
-                y=y_total,
-                name="Total",
-                line=dict(color="green"),
-            )
-        )
+    fig.update_layout(
+        title = "Profit Over Time",
+        xaxis_title = "Hands Played",
+        yaxis_title = label,
+        template = "plotly_dark"
+    )
 
-        if show_showdown:
-            fig.add_trace(
-                go.Scatter(
-                    x=df_plot.index,
-                    y=y_show,
-                    name="Showdown",
-                    line=dict(color="blue"),
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=df_plot.index,
-                    y=y_noShow,
-                    name="Non-Showdown",
-                    line=dict(color="red"),
-                )
-            )
+    # Extra stats
+    st.subheader("Summary")
+    total_hands = len(df)
+    total_profit_bb = df["cum_total_bb"][len(df) - 1]
+    bb_per_100 = (total_profit_bb / total_hands) * 100
+    total_profit = df["cum_total"][len(df) - 1]
 
-        fig.update_layout(
-            title="Profit Over Time",
-            xaxis_title="Hands Played",
-            yaxis_title=y_label,
-            template="plotly_white",
-        )
+    if unit == "€":
+        profit_display = round(total_profit, 2)
+        profit_label = "Total Profit (€)"
+    else:
+        profit_display = round(total_profit_bb, 2)
+        profit_label = "Total Profit (bb)"
 
-        st.plotly_chart(fig, width="stretch")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Hands", total_hands)
+    col2.metric(profit_label, profit_display)
+    col3.metric("Winrate (bb/100)", round(bb_per_100, 2))
 
-        # Extra stats
-        st.subheader("Summary")
-        total_hands = len(df_plot) - 1 # exclude the initial 0 row
-        total_profit_bb = df["profit_bb"].sum()
-        bb_per_100 = (total_profit_bb / total_hands) * 100 if total_hands > 0 else 0
-        total_profit = df_plot["profit"].sum()
+    # Graph
+    selected = plotly_events(fig, click_event=True)
+    if selected:
+        index = selected[0]["pointIndex"]
+        gamecode = df.iloc[index - 1]["gamecode"] if index > 0 else None
 
-        if unit == "€":
-            profit_display = round(total_profit, 2)
-            profit_label = "Total Profit (€)"
-        else:
-            profit_display = round(total_profit_bb, 2)
-            profit_label = "Total Profit (bb)"
-
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Hands", total_hands)
-        col2.metric(profit_label, profit_display)
-        col3.metric("Winrate (bb/100)", round(bb_per_100, 2))
-
+        if pd.notna(gamecode):
+            st.markdown(gamecode)
+        
 if __name__ == "__main__":
     main()

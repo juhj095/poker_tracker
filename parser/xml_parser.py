@@ -14,7 +14,7 @@ def xml_parser(cursor, xml_path):
     existing_session_id = get_session_id_by_code(cursor, sessioncode)
 
     if existing_session_id:
-        print(f"Session {sessioncode} already exists in the database. Skipping import for {os.path.basename(xml_path)}\n")
+        print(f"Session already exists in the database. Skipping import for {os.path.basename(xml_path)}\n")
 
     # TODO better way to check if cash game for more currencies
     elif "€" not in gametype:
