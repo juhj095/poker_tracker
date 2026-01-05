@@ -15,7 +15,6 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
     query = """
         SELECT
             h.hand_id,
-            h.gamecode,
             h.profit,
             h.startdate,
             s.bigblind,
@@ -53,3 +52,46 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
     """
 
     return query, params
+
+def hand_info():
+    query = """
+        SELECT
+            r.roundnumber,
+            a.actionorder,
+            p.name,
+            at.description AS action,
+            a.amount
+        FROM Action a
+        JOIN ActionType at ON a.actiontype_id = at.actiontype_id
+        JOIN Player p ON a.player_id = p.player_id
+        JOIN Round r ON a.round_id = r.round_id
+        WHERE r.hand_id = %s
+        ORDER BY r.roundnumber, a.actionorder
+    """
+    return query
+
+def board_info():
+    query = """
+        SELECT flop, turn, river
+        FROM Board
+        WHERE hand_id = %s
+        ORDER BY boardnumber
+    """
+    return query
+
+def players_info():
+    query = """
+        SELECT name, seat, chips, win, dealer, card1, card2
+        FROM Player
+        WHERE hand_id = %s
+    """
+    return query
+
+def hero_name_info():
+    query = """
+        SELECT s.nickname
+        FROM Session s
+        JOIN Hand h ON s.session_id = h.session_id
+        WHERE hand_id = %s
+    """
+    return query

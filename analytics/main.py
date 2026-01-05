@@ -45,7 +45,7 @@ def main():
         y = y_axis(total),
         name = "Total",
         mode = "lines+markers",
-        customdata = [None] + df["gamecode"].tolist(),
+        customdata = [None] + df["hand_id"].tolist(),
         line = dict(color="green"),
         marker = dict(opacity=0),
     ))
@@ -101,10 +101,13 @@ def main():
     selected = plotly_events(fig, click_event=True)
     if selected:
         index = selected[0]["pointIndex"]
-        gamecode = df.iloc[index - 1]["gamecode"] if index > 0 else None
+        hand_id = df.iloc[index - 1]["hand_id"] if index > 0 else None
 
-        if pd.notna(gamecode):
-            st.markdown(gamecode)
-        
+        if pd.notna(hand_id):
+            st.markdown(
+                f"<a href='/hand?hand_id={hand_id}' target='_blank'>Open hand {hand_id}</a>",
+                unsafe_allow_html=True,
+            )
+
 if __name__ == "__main__":
     main()
