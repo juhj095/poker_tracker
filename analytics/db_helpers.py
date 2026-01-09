@@ -53,7 +53,7 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
 
     return query, params
 
-def hand_info():
+def actions_info():
     query = """
         SELECT
             r.roundnumber,
@@ -70,7 +70,7 @@ def hand_info():
     """
     return query
 
-def board_info():
+def boards_info():
     query = """
         SELECT flop, turn, river
         FROM Board
@@ -87,9 +87,9 @@ def players_info():
     """
     return query
 
-def hero_name_info():
+def hand_info():
     query = """
-        SELECT s.nickname
+        SELECT s.nickname, s.bigblind
         FROM Session s
         JOIN Hand h ON s.session_id = h.session_id
         WHERE hand_id = %s

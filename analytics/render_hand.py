@@ -1,4 +1,4 @@
-from utils import ROUND_NAMES, format_multiple_cards, extract_cards_from_flop, community_cards
+from utils import ROUND_NAMES, format_multiple_cards, extract_cards_from_flop, community_cards, format_amount, format_pot
 
 def render_run_boards(board_rows, street_is_shared):
     lines = []
@@ -55,9 +55,10 @@ def render_run_boards(board_rows, street_is_shared):
 
     return lines
 
-def render_hand_history(actions, board_rows, players, hero):
+def render_hand_history(actions, board_rows, players, hand, bet_unit):
     lines = []
-
+    hero = hand["nickname"].iloc[0]
+    bigblind = hand["bigblind"].iloc[0]
     hero_row = players.loc[players["name"] == hero]
     if not hero_row.empty:
         row = hero_row.iloc[0]
@@ -68,7 +69,7 @@ def render_hand_history(actions, board_rows, players, hero):
     last_action_round = actions["roundnumber"].max()
     number_of_runs = len(board_rows)
     is_multi_run = number_of_runs > 1
-    print(rounds)
+
     def street_is_shared(r):
         return r <= last_action_round
     
@@ -78,14 +79,14 @@ def render_hand_history(actions, board_rows, players, hero):
     # Render shared streets first
     for r in [0, 1, 2, 3, 4]:
         if not folds + 1 < len(players) or (is_multi_run and not street_is_shared(r)):
-            lines.append(f"Pot: {pot:.2f}") # TODO correct final pot size
+            lines.append(format_pot(pot, bigblind, bet_unit)) # TODO correct final pot size
             break
         lines.append("")
         lines.append(f"*** {ROUND_NAMES[r]} ***")
         if r >= 2:
             lines.extend(community_cards(r, board_rows.iloc[0]))
         if pot:
-            lines.append(f"Pot: {pot:.2f}")
+            lines.append(format_pot(pot, bigblind, bet_unit))
             lines.append("")
         
         if r not in rounds:
@@ -95,7 +96,8 @@ def render_hand_history(actions, board_rows, players, hero):
                 folds += 1
             if row.amount:
                 pot += row.amount
-                lines.append(f"{row.name}: {row.action} {row.amount}")
+                formatted = format_amount(row.amount, bigblind, bet_unit)
+                lines.append(f"{row.name}: {row.action} {formatted}")
             else:
                 lines.append(f"{row.name}: {row.action}")
 
@@ -116,6 +118,6 @@ def render_hand_history(actions, board_rows, players, hero):
 
     for player in players.itertuples():
         if player.win and float(player.win) > 0:
-            lines.append(f"{player.name} wins {player.win}")
+            lines.append(f"{player.name} wins {format_amount(player.win, bigblind, bet_unit)}")
 
     return "\n".join(lines)

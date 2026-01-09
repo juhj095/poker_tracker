@@ -48,3 +48,13 @@ def community_cards(round_number, board_row):
             cards.append(river)
 
     return [format_multiple_cards(cards)] if cards and round_number >= 2 else []
+
+def format_amount(amount, bigblind, unit):
+    if amount is None:
+        return ""
+    if unit == "Big Blinds":
+        return f"{amount / bigblind:.2f} bb"
+    return f"{amount:.2f} €"
+
+def format_pot(pot, bigblind, unit):
+    return f"Pot: {format_amount(pot, bigblind, unit)}"

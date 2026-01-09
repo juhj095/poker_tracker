@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from db_helpers import get_connection, profit_over_time, hand_info, board_info, players_info, hero_name_info
+from db_helpers import get_connection, profit_over_time, actions_info, boards_info, players_info, hand_info
 
 # TODO load currency and big blind data seperately, saves time
 @st.cache_data(show_spinner="Loading hands…")
@@ -15,16 +15,16 @@ def load_profit_data(start_date, end_date):
     df = df.sort_values(["startdate", "hand_id"]).reset_index(drop=True)
     return df
 
-def load_hand(hand_id):
+def load_actions(hand_id):
     connection = get_connection()
-    query = hand_info()
+    query = actions_info()
     df = pd.read_sql(query, connection, params=[hand_id])
     connection.close()
     return df
 
-def load_board(hand_id):
+def load_boards(hand_id):
     connection = get_connection()
-    query = board_info()
+    query = boards_info()
     df = pd.read_sql(query, connection, params=[hand_id])
     connection.close()
     return df
@@ -36,9 +36,9 @@ def load_players(hand_id):
     connection.close()
     return df
 
-def load_hero_name(hand_id):
+def load_hand_info(hand_id):
     connection = get_connection()
-    query = hero_name_info()
+    query = hand_info()
     df = pd.read_sql(query, connection, params=[hand_id])
     connection.close()
     return df

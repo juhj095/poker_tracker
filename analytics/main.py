@@ -11,7 +11,7 @@ def main():
 
     # Filters
     st.sidebar.header("Filters")
-    unit = st.sidebar.radio("Display unit:", ["€", "Big Blinds"])
+    unit = st.sidebar.radio("Display unit:", ["Big Blinds", "€"])
     show_showdown = st.sidebar.checkbox("Showdown/Non SD Winnings", False)
 
     start_date = st.sidebar.date_input("Start date", value=None)
