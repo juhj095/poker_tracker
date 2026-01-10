@@ -1,69 +1,46 @@
-from utils import ROUND_NAMES, format_multiple_cards, extract_cards_from_flop, community_cards, format_amount, format_pot
+from utils import ROUND_NAMES, format_multiple_cards, community_cards, format_amount, format_pot, assign_positions, format_player_label
+from render_multiple_runs import render_run_boards
 
-def render_run_boards(board_rows, street_is_shared):
-    lines = []
-
-    # Detect shared streets
-    shared_streets = {r for r in range(2, 5) if street_is_shared(r)}
-
-    # Shared streets exist
-    if shared_streets:
-        first_board = board_rows.iloc[0]
-
-        # Build base cards for shared streets
-        base_cards = []
-        if 2 in shared_streets and first_board.flop:
-            base_cards.extend(extract_cards_from_flop(first_board.flop))
-        if 3 in shared_streets and first_board.turn:
-            base_cards.append(first_board.turn)
-
-        # Append per-run streets
-        for run_index, board in enumerate(board_rows.itertuples(), start=1):
-            lines.append("")
-            lines.append(f"=== Run {run_index} ===")
-
-            # Start with the shared cards (flop/turn if shared)
-            run_cards = list(base_cards)  
-
-            # Add any remaining cards for this run
-            if 2 not in shared_streets and board.flop:
-                run_cards.extend(extract_cards_from_flop(board.flop))
-            if 3 not in shared_streets and board.turn:
-                run_cards.append(board.turn)
-            if 4 not in shared_streets and board.river:
-                run_cards.append(board.river)
-
-            lines.append(f"*** River ***")
-            lines.append(format_multiple_cards(run_cards))
-
-    # All-in preflop
-    else:
-        for run_index, board in enumerate(board_rows.itertuples(), start=1):
-            lines.append("")
-            lines.append(f"=== Run {run_index} ===")
-
-            run_cards = []
-            if board.flop:
-                run_cards.extend(extract_cards_from_flop(board.flop))
-            if board.turn:
-                run_cards.append(board.turn)
-            if board.river:
-                run_cards.append(board.river)
-
-            lines.append("*** River ***")
-            lines.append(format_multiple_cards(run_cards))
-
-    return lines
-
-def render_hand_history(actions, board_rows, players, hand, bet_unit):
+def render_hand_history(actions, board_rows, players, hand, bet_unit, hide_names):
     lines = []
     hero = hand["nickname"].iloc[0]
     bigblind = hand["bigblind"].iloc[0]
     hero_row = players.loc[players["name"] == hero]
+
+    positioned_players = assign_positions(players.itertuples())
+    player_meta = {
+        p["name"]: {
+            "position": p["position"],
+        }
+        for p in positioned_players
+    }
+
+    lines.append("*** Players ***")
+    for p in positioned_players:
+        stack = p.get("chips")
+        pos = p.get("position")
+        name = p.get("name")
+
+        label = format_player_label(
+            name=name,
+            position=pos,
+            hero_name=hero,
+            hide_names=hide_names,
+        )
+
+        lines.append(f"{label} ({format_amount(stack, bigblind, bet_unit)})")
+    lines.append("")
+
     if not hero_row.empty:
         row = hero_row.iloc[0]
         cards = format_multiple_cards([row.card1, row.card2])
-        lines.append(f"{hero} (Hero) has {cards}")
+        label = format_player_label(
+            name=hero,
+            position=player_meta[hero]["position"],
+            hero_name=hero,
+            hide_names=hide_names
+        )
+        lines.append(f"{label} has {cards}")
 
     rounds = dict(tuple(actions.groupby("roundnumber")))
     last_action_round = actions["roundnumber"].max()
@@ -92,14 +69,22 @@ def render_hand_history(actions, board_rows, players, hand, bet_unit):
         if r not in rounds:
             continue
         for row in rounds[r].itertuples():
+            meta = player_meta.get(row.name)
+            label = format_player_label(
+                name=row.name,
+                position=meta["position"],
+                hero_name=hero,
+                hide_names=hide_names,
+            )
+
             if row.action == "Fold":
                 folds += 1
             if row.amount:
                 pot += row.amount
                 formatted = format_amount(row.amount, bigblind, bet_unit)
-                lines.append(f"{row.name}: {row.action} {formatted}")
+                lines.append(f"{label}: {row.action} {formatted}")
             else:
-                lines.append(f"{row.name}: {row.action}")
+                lines.append(f"{label}: {row.action}")
 
     # Run-it-twice
     if is_multi_run:
@@ -111,13 +96,27 @@ def render_hand_history(actions, board_rows, players, hand, bet_unit):
     for player in players.itertuples():
         if (player.card1 or player.card2) and player.name != hero:
             cards = format_multiple_cards([player.card1, player.card2])
-            lines.append(f"{player.name} shows {cards}")
+            meta = player_meta[player.name]
+            label = format_player_label(
+                name=player.name,
+                position=meta["position"],
+                hero_name=hero,
+                hide_names=hide_names,
+            )
+            lines.append(f"{label} shows {cards}")
 
     if lines[-1] != "":
         lines.append("")
 
     for player in players.itertuples():
         if player.win and float(player.win) > 0:
-            lines.append(f"{player.name} wins {format_amount(player.win, bigblind, bet_unit)}")
+            meta = player_meta[player.name]
+            label = format_player_label(
+                name=player.name,
+                position=meta["position"],
+                hero_name=hero,
+                hide_names=hide_names,
+            )
+            lines.append(f"{label} wins {format_amount(player.win, bigblind, bet_unit)}")
 
     return "\n".join(lines)

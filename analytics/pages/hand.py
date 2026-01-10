@@ -14,6 +14,11 @@ bet_unit = st.sidebar.radio(
     horizontal=True
 )
 
+hide_names = st.sidebar.checkbox(
+    "Hide names",
+    value=False
+)
+
 if not hand_id:
     st.warning("No hand selected.")
     st.stop()
@@ -33,6 +38,6 @@ if actions.empty:
     st.warning("No actions found for this hand.")
     st.stop()
 
-hand_text = render_hand_history(actions, boards, players, hand, bet_unit)
+hand_text = render_hand_history(actions, boards, players, hand, bet_unit, hide_names)
 
 st.code(hand_text, language="text")

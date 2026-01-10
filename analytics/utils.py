@@ -58,3 +58,51 @@ def format_amount(amount, bigblind, unit):
 
 def format_pot(pot, bigblind, unit):
     return f"Pot: {format_amount(pot, bigblind, unit)}"
+
+POSITION_MAP = {
+    2: ["BTN", "SB"],
+    3: ["BTN", "SB", "BB"],
+    4: ["BTN", "SB", "BB", "UTG"],
+    5: ["BTN", "SB", "BB", "UTG", "CO"],
+    6: ["BTN", "SB", "BB", "UTG", "MP", "CO"],
+    7: ["BTN", "SB", "BB", "UTG", "HJ", "LJ", "CO"],
+    8: ["BTN", "SB", "BB", "UTG", "UTG+1", "LJ", "HJ", "CO"],
+    9: ["BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "LJ", "HJ", "CO"],
+}
+
+def assign_positions(players):
+    rows = [p._asdict() for p in players]
+
+    # Find dealer
+    btn_index = next(i for i, p in enumerate(rows) if int(p.get("dealer", 0)) == 1)
+
+    # Rotate so BTN is first
+    rotated = rows[btn_index:] + rows[:btn_index]
+
+    player_count = len(rotated)
+    if player_count not in POSITION_MAP:
+        raise ValueError(f"Unsupported table size: {player_count}")
+
+    positions = POSITION_MAP[player_count]
+
+    # Assign positions
+    for player, pos in zip(rotated, positions):
+        player["position"] = pos
+
+    return rotated
+
+def format_player_label(
+    name: str,
+    position: str,
+    hero_name: str,
+    hide_names: bool
+):
+    if hide_names:
+        label = position
+    else:
+        label = f"{name} [{position}]"
+
+    if name == hero_name:
+        label += " (Hero)"
+
+    return label
