@@ -11,16 +11,17 @@ def calculate_profit(hero_name, players):
         return 0.0
 
     hero_win = hero["win"]
+    max_other_bet = max((p["bet"] for p in players if p["name"] != hero_name))
     if hero_win > 0:
-        other_wins = sum(   # Chopped pots/side pots
-            (p.get("win") or 0.0)
-            for p in players
-            if p["name"] != hero_name and (p.get("win") or 0.0) > 0
-        )
-        rake = sum((p.get("rakeamount") or 0.0 for p in players), 0.0)
-        profit = sum(min(p["bet"], hero_bet) for p in players if p["name"] != hero_name) - rake - other_wins
+        winners = [p for p in players if (p.get("win") or 0) > 0]
+        if len(winners) > 1:
+            if hero_bet > max_other_bet:
+                profit = hero_win - hero_bet + (hero_bet - max_other_bet)
+            else:
+                profit = hero_win - hero_bet
+        else:
+            profit = sum(min(p["bet"], hero_bet) for p in players if p["name"] != hero_name) - (hero["rakeamount"] or 0)
     else:
-        max_other_bet = max((p["bet"] for p in players if p["name"] != hero_name))
         profit = -(min(hero_bet, max_other_bet))
 
     return profit
