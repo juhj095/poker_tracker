@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from db_helpers import get_connection, profit_over_time, actions_info, boards_info, players_info, hand_info
+from data.db_helpers import get_connection, profit_over_time, actions_info, boards_info, players_info, hand_info
 
 # TODO load currency and big blind data seperately, saves time
 @st.cache_data(show_spinner="Loading hands…")

@@ -1,5 +1,6 @@
-from utils import ROUND_NAMES, format_multiple_cards, community_cards, format_amount, format_pot, assign_positions, format_player_label
-from render_multiple_runs import render_run_boards
+from utils import format_multiple_cards, community_cards, format_amount, format_pot, assign_positions, format_player_label
+from constants import ROUND_NAMES
+from hand_history.render_multiple_runs import render_run_boards
 
 def render_hand_history(actions, board_rows, players, hand, bet_unit, hide_names):
     lines = []

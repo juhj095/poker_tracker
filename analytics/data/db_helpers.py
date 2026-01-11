@@ -15,6 +15,7 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
     query = """
         SELECT
             h.hand_id,
+            h.gamecode,
             h.profit,
             h.startdate,
             s.bigblind,
@@ -36,11 +37,11 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
     params = []
 
     if start_date:
-        query += " AND s.startdate >= %s"
+        query += " AND h.startdate >= %s"
         params.append(start_date)
 
     if end_date:
-        query += " AND s.startdate <= %s"
+        query += " AND h.startdate <= %s"
         params.append(end_date)
     
     # TODO stakes

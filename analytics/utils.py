@@ -1,21 +1,4 @@
-# Lines start at 0, change numpy.float64 to float due to plotly_events
-def y_axis(total):
-    return [0.0] + total.astype(float).tolist()
-
-ROUND_NAMES = {
-    0: "Blinds",
-    1: "Preflop",
-    2: "Flop",
-    3: "Turn",
-    4: "River",
-}
-
-SUIT_MAP = {
-    "S": "♠",
-    "H": "♥",
-    "D": "♦",
-    "C": "♣",
-}
+from constants import SUIT_MAP, POSITION_MAP
 
 def format_card(card):
     suit, rank = card[0], card[1]
@@ -59,17 +42,6 @@ def format_amount(amount, bigblind, unit):
 def format_pot(pot, bigblind, unit):
     return f"Pot: {format_amount(pot, bigblind, unit)}"
 
-POSITION_MAP = {
-    2: ["BTN", "SB"],
-    3: ["BTN", "SB", "BB"],
-    4: ["BTN", "SB", "BB", "UTG"],
-    5: ["BTN", "SB", "BB", "UTG", "CO"],
-    6: ["BTN", "SB", "BB", "UTG", "MP", "CO"],
-    7: ["BTN", "SB", "BB", "UTG", "HJ", "LJ", "CO"],
-    8: ["BTN", "SB", "BB", "UTG", "UTG+1", "LJ", "HJ", "CO"],
-    9: ["BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "LJ", "HJ", "CO"],
-}
-
 def assign_positions(players):
     rows = [p._asdict() for p in players]
 
@@ -106,3 +78,34 @@ def format_player_label(
         label += " (Hero)"
 
     return label
+
+def select_profit_series(df, unit):
+    if unit == "€":
+        return {
+            "total": df["cum_total"],
+            "show": df["cum_show"],
+            "noshow": df["cum_noshow"],
+            "label": "Profit (€)",
+        }
+
+    return {
+        "total": df["cum_total_bb"],
+        "show": df["cum_show_bb"],
+        "noshow": df["cum_noshow_bb"],
+        "label": "Profit (bb)",
+    }
+
+def compute_summary_stats(df):
+    total_hands = len(df)
+
+    total_profit = df["cum_total"].iloc[-1]
+    total_profit_bb = df["cum_total_bb"].iloc[-1]
+
+    bb_per_100 = (total_profit_bb / total_hands) * 100 if total_hands else 0
+
+    return {
+        "hands": total_hands,
+        "profit": total_profit,
+        "profit_bb": total_profit_bb,
+        "bb_per_100": bb_per_100,
+    }

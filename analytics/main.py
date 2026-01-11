@@ -1,9 +1,9 @@
 import streamlit as st
-import plotly.graph_objects as go
 from streamlit_plotly_events import plotly_events
-import pandas as pd
-from load_data import load_profit_data
-from utils import y_axis
+from data.load_data import load_profit_data
+from utils import select_profit_series, compute_summary_stats
+from plots.profit_plot import build_profit_figure
+from hand_history.hand import hand
 
 def main():
     st.set_page_config(page_title="Poker Tracker", layout="wide")
@@ -23,91 +23,49 @@ def main():
         st.warning("No data found — check your database or filters.")
         return
 
-    # Graph unit
-    if unit == "€":
-        total = df["cum_total"]
-        show = df["cum_show"]
-        noShow = df["cum_noshow"]
-        label = "Profit (€)"
-    else:
-        total = df["cum_total_bb"]
-        show = df["cum_show_bb"]
-        noShow = df["cum_noshow_bb"]
-        label = "Profit (bb)"
+    series = select_profit_series(df, unit)
 
-    # Plot
-    fig = go.Figure()
-
-    hands_played_list = list(range(len(df) + 1))
-
-    fig.add_trace(go.Scatter(
-        x = hands_played_list,
-        y = y_axis(total),
-        name = "Total",
-        mode = "lines+markers",
-        customdata = [None] + df["hand_id"].tolist(),
-        line = dict(color="green"),
-        marker = dict(opacity=0),
-    ))
-
-    if show_showdown:
-        fig.add_trace(go.Scatter(
-            x = hands_played_list,
-            y = y_axis(show),
-            name = "Showdown",
-            line = dict(color="blue"),
-        ))
-        fig.add_trace(go.Scatter(
-            x = hands_played_list,
-            y = y_axis(noShow),
-            name  = "Non-Showdown",
-            line = dict(color="red"),
-        ))
-
-    fig.update_xaxes(
-        range = [0, len(df)],
-        tickformat = ",d"
+    fig = build_profit_figure(
+        df=df,
+        total=series["total"],
+        show=series["show"],
+        noshow=series["noshow"],
+        label=series["label"],
+        show_showdown=show_showdown
     )
 
-    fig.update_yaxes(tickformat=",.2f")
+    stats = compute_summary_stats(df)
 
-    fig.update_layout(
-        title = "Profit Over Time",
-        xaxis_title = "Hands Played",
-        yaxis_title = label,
-        template = "plotly_dark"
-    )
-
-    # Extra stats
     st.subheader("Summary")
-    total_hands = len(df)
-    total_profit_bb = df["cum_total_bb"][len(df) - 1]
-    bb_per_100 = (total_profit_bb / total_hands) * 100
-    total_profit = df["cum_total"][len(df) - 1]
-
-    if unit == "€":
-        profit_display = round(total_profit, 2)
-        profit_label = "Total Profit (€)"
-    else:
-        profit_display = round(total_profit_bb, 2)
-        profit_label = "Total Profit (bb)"
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Hands", total_hands)
-    col2.metric(profit_label, profit_display)
-    col3.metric("Winrate (bb/100)", round(bb_per_100, 2))
+    col1.metric("Total Hands", stats["hands"])
+
+    if unit == "€":
+        col2.metric("Total Profit (€)", round(stats["profit"], 2))
+    else:
+        col2.metric("Total Profit (bb)", round(stats["profit_bb"], 2))
+
+    col3.metric("Winrate (bb/100)", round(stats["bb_per_100"], 2))
+
+    if "selected_hand_id" not in st.session_state:
+        st.session_state.selected_hand_id = None
+        st.session_state.selected_hand_gamecode = None
 
     # Graph
     selected = plotly_events(fig, click_event=True)
     if selected:
         index = selected[0]["pointIndex"]
-        hand_id = df.iloc[index - 1]["hand_id"] if index > 0 else None
+        if index > 0:
+            st.session_state.selected_hand_id = df.iloc[index - 1]["hand_id"]
+            st.session_state.selected_hand_gamecode = df.iloc[index - 1]["gamecode"]
 
-        if pd.notna(hand_id):
-            st.markdown(
-                f"<a href='/hand?hand_id={hand_id}' target='_blank'>Open hand {hand_id}</a>",
-                unsafe_allow_html=True,
-            )
+    if st.session_state.selected_hand_id:
+        with st.expander(
+            f"Hand {st.session_state.selected_hand_gamecode}",
+            expanded=True,
+        ):
+            hand(int(st.session_state.selected_hand_id))
 
 if __name__ == "__main__":
     main()
