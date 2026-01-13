@@ -103,12 +103,20 @@ def xml_parser(cursor, xml_path):
                         pocket_cards = normalize_cards(cards.text)
                         if (pocket_cards != "XX"):
                             player_name = cards.attrib.get("player")
-
-                            insert_pocket_cards(cursor, (
-                                pocket_cards[:2],
-                                pocket_cards[2:],
-                                player_id_map[player_name]
-                            ))
+                            # If one card is shown
+                            if len(pocket_cards) == 3:
+                                pocket_cards = pocket_cards.replace("X", "")
+                                insert_pocket_cards(cursor, (
+                                    pocket_cards,
+                                    None,
+                                    player_id_map[player_name]
+                                ))
+                            else:
+                                insert_pocket_cards(cursor, (
+                                    pocket_cards[:2],
+                                    pocket_cards[2:],
+                                    player_id_map[player_name]
+                                ))
 
                 if round_number in (2, 3, 4):
                     parse_boards(round, boards)

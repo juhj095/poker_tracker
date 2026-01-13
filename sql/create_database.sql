@@ -36,9 +36,7 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Session` (
   `chipsin` DECIMAL(10,2) NULL,
   `chipsout` DECIMAL(10,2) NULL,
   `tablesize` INT NULL,
-  PRIMARY KEY (`session_id`),
-  UNIQUE INDEX `session_id_UNIQUE` (`session_id` ASC) VISIBLE,
-  UNIQUE INDEX `session_code_UNIQUE` (`sessioncode` ASC) VISIBLE)
+  PRIMARY KEY (`session_id`))
 ENGINE = InnoDB;
 
 
@@ -52,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Hand` (
   `startdate` TIMESTAMP NOT NULL,
   `profit` DECIMAL(10,2) NULL,
   `showdown` TINYINT NULL,
-  PRIMARY KEY (`hand_id`, `session_id`),
-  UNIQUE INDEX `hand_id_UNIQUE` (`hand_id` ASC) VISIBLE,
+  PRIMARY KEY (`hand_id`),
   INDEX `fk_Hand_Session_idx` (`session_id` ASC) VISIBLE,
+  INDEX `idx_hand_startdate_handid` (`startdate` ASC, `hand_id` ASC) VISIBLE,
   CONSTRAINT `fk_Hand_Session`
     FOREIGN KEY (`session_id`)
     REFERENCES `pokertracker`.`Session` (`session_id`)
@@ -78,8 +76,7 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Player` (
   `dealer` TINYINT NULL,
   `card1` CHAR(2) NULL,
   `card2` CHAR(2) NULL,
-  PRIMARY KEY (`player_id`, `hand_id`),
-  UNIQUE INDEX `player_id_UNIQUE` (`player_id` ASC) VISIBLE,
+  PRIMARY KEY (`player_id`),
   INDEX `fk_Player_Hand1_idx` (`hand_id` ASC) VISIBLE,
   CONSTRAINT `fk_Player_Hand1`
     FOREIGN KEY (`hand_id`)
@@ -96,9 +93,8 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Round` (
   `round_id` INT NOT NULL AUTO_INCREMENT,
   `hand_id` INT NOT NULL,
   `roundnumber` INT NOT NULL,
-  PRIMARY KEY (`round_id`, `hand_id`),
+  PRIMARY KEY (`round_id`),
   INDEX `fk_Round_Hand1_idx` (`hand_id` ASC) VISIBLE,
-  UNIQUE INDEX `round_id_UNIQUE` (`round_id` ASC) VISIBLE,
   CONSTRAINT `fk_Round_Hand1`
     FOREIGN KEY (`hand_id`)
     REFERENCES `pokertracker`.`Hand` (`hand_id`)
@@ -113,8 +109,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `pokertracker`.`ActionType` (
   `actiontype_id` INT NOT NULL,
   `description` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`actiontype_id`),
-  UNIQUE INDEX `action_type_id_UNIQUE` (`actiontype_id` ASC) VISIBLE)
+  PRIMARY KEY (`actiontype_id`))
 ENGINE = InnoDB;
 
 
@@ -128,8 +123,7 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Action` (
   `actionorder` INT NULL,
   `actiontype_id` INT NOT NULL,
   `player_id` INT NOT NULL,
-  PRIMARY KEY (`action_id`, `round_id`, `actiontype_id`, `player_id`),
-  UNIQUE INDEX `action_id_UNIQUE` (`action_id` ASC) VISIBLE,
+  PRIMARY KEY (`action_id`),
   INDEX `fk_Action_Round1_idx` (`round_id` ASC) VISIBLE,
   INDEX `fk_Action_ActionType1_idx` (`actiontype_id` ASC) VISIBLE,
   INDEX `fk_Action_Player1_idx` (`player_id` ASC) VISIBLE,
@@ -161,10 +155,43 @@ CREATE TABLE IF NOT EXISTS `pokertracker`.`Board` (
   `flop` CHAR(6) NULL,
   `turn` CHAR(2) NULL,
   `river` CHAR(2) NULL,
-  PRIMARY KEY (`board_id`, `hand_id`),
+  PRIMARY KEY (`board_id`),
   INDEX `fk_Board_Hand1_idx` (`hand_id` ASC) VISIBLE,
-  UNIQUE INDEX `board_id_UNIQUE` (`board_id` ASC) VISIBLE,
   CONSTRAINT `fk_Board_Hand1`
+    FOREIGN KEY (`hand_id`)
+    REFERENCES `pokertracker`.`Hand` (`hand_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `pokertracker`.`Tag`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `pokertracker`.`Tag` (
+  `tag_id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`tag_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `pokertracker`.`HandTag`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `pokertracker`.`HandTag` (
+  `handtag_id` INT NOT NULL AUTO_INCREMENT,
+  `tag_id` INT NOT NULL,
+  `hand_id` INT NOT NULL,
+  PRIMARY KEY (`handtag_id`),
+  INDEX `fk_HandTag_Tag1_idx` (`tag_id` ASC) VISIBLE,
+  INDEX `fk_HandTag_Hand1_idx` (`hand_id` ASC) VISIBLE,
+  UNIQUE INDEX `hand_id_UNIQUE` (`hand_id` ASC, `tag_id` ASC) INVISIBLE,
+  CONSTRAINT `fk_HandTag_Tag1`
+    FOREIGN KEY (`tag_id`)
+    REFERENCES `pokertracker`.`Tag` (`tag_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_HandTag_Hand1`
     FOREIGN KEY (`hand_id`)
     REFERENCES `pokertracker`.`Hand` (`hand_id`)
     ON DELETE NO ACTION
@@ -190,6 +217,16 @@ INSERT INTO `pokertracker`.`ActionType` (`actiontype_id`, `description`) VALUES 
 INSERT INTO `pokertracker`.`ActionType` (`actiontype_id`, `description`) VALUES (7, 'All-in');
 INSERT INTO `pokertracker`.`ActionType` (`actiontype_id`, `description`) VALUES (15, 'Ante');
 INSERT INTO `pokertracker`.`ActionType` (`actiontype_id`, `description`) VALUES (23, 'Raise');
+
+COMMIT;
+
+
+-- -----------------------------------------------------
+-- Data for table `pokertracker`.`Tag`
+-- -----------------------------------------------------
+START TRANSACTION;
+USE `pokertracker`;
+INSERT INTO `pokertracker`.`Tag` (`tag_id`, `name`) VALUES (1, 'favourite');
 
 COMMIT;
 

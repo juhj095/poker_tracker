@@ -90,9 +90,43 @@ def players_info():
 
 def hand_info():
     query = """
-        SELECT s.nickname, s.bigblind
+        SELECT
+            s.nickname,
+            s.bigblind,
+            h.hand_id,
+            GROUP_CONCAT(ht.tag_id) AS tag_ids
         FROM Session s
         JOIN Hand h ON s.session_id = h.session_id
-        WHERE hand_id = %s
+        LEFT JOIN HandTag ht ON h.hand_id = ht.hand_id
+        WHERE h.gamecode = %s
+        GROUP BY h.hand_id
+    """
+    return query
+
+def add_hand_tag():
+    query = """
+        INSERT INTO HandTag (hand_id, tag_id)
+        VALUES (%s, %s)
+        ON DUPLICATE KEY UPDATE handtag_id = handtag_id;
+    """
+    return query
+
+def delete_hand_tag():
+    query = """
+        DELETE FROM HandTag
+        WHERE hand_id = %s AND tag_id = %s
+    """
+    return query
+
+def get_favourite_hands():
+    query = """
+        SELECT h.hand_id, h.gamecode, 
+            CONCAT(p.card1, p.card2) AS hero_cards
+        FROM Hand h
+        JOIN Player p ON h.hand_id = p.hand_id
+        JOIN HandTag ht ON h.hand_id = ht.hand_id
+        JOIN Session s ON h.session_id = s.session_id
+        WHERE ht.tag_id = 1 AND p.name = s.nickname
+        ORDER BY h.startdate DESC;
     """
     return query

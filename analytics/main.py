@@ -1,9 +1,9 @@
 import streamlit as st
 from streamlit_plotly_events import plotly_events
-from data.load_data import load_profit_data
+from data.handle_data import load_profit_data
 from utils import select_profit_series, compute_summary_stats
 from plots.profit_plot import build_profit_figure
-from hand_history.hand import hand
+from hand_history.hand_history import hand
 
 def main():
     st.set_page_config(page_title="Poker Tracker", layout="wide")
@@ -48,24 +48,26 @@ def main():
 
     col3.metric("Winrate (bb/100)", round(stats["bb_per_100"], 2))
 
-    if "selected_hand_id" not in st.session_state:
-        st.session_state.selected_hand_id = None
-        st.session_state.selected_hand_gamecode = None
+    if "selected_gamecode" not in st.session_state:
+        st.session_state.selected_gamecode = None
 
     # Graph
     selected = plotly_events(fig, click_event=True)
     if selected:
         index = selected[0]["pointIndex"]
         if index > 0:
-            st.session_state.selected_hand_id = df.iloc[index - 1]["hand_id"]
-            st.session_state.selected_hand_gamecode = df.iloc[index - 1]["gamecode"]
+            st.session_state.selected_gamecode = df.iloc[index - 1]["gamecode"]
 
-    if st.session_state.selected_hand_id:
+    if st.session_state.selected_gamecode:
         with st.expander(
-            f"Hand {st.session_state.selected_hand_gamecode}",
+            f"Hand {st.session_state.selected_gamecode}",
             expanded=True,
         ):
-            hand(int(st.session_state.selected_hand_id))
+            st.markdown(
+                f"<a href='/hand?hand={st.session_state.selected_gamecode}' target='_blank'>Open hand in a new tab</a>",
+                unsafe_allow_html=True,
+            )
+            hand()
 
 if __name__ == "__main__":
     main()
