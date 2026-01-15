@@ -11,7 +11,7 @@ def get_connection():
         database = os.getenv("DB_NAME")
     )
 
-def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
+def profit_over_time(start_date=None, end_date=None, stakes=None):
     query = """
         SELECT
             h.hand_id,
@@ -43,14 +43,14 @@ def profit_over_time(start_date=None, end_date=None): # TODO stakes=None
     if end_date:
         query += " AND h.startdate <= %s"
         params.append(end_date)
-    
-    # TODO stakes
-    """
+
     if stakes:
-        placeholders = ", ".join(["%s"] * len(stakes))
-        query += f" AND s.bigblind IN ({placeholders})"
-        params.extend(stakes)
-    """
+        query += " AND ("
+        parts = []
+        for bb, ante in stakes:
+            parts.append("(s.bigblind = %s AND (s.tablename LIKE 'ANTE%%') = %s)")
+            params.extend([bb, int(bool(ante))])
+        query += " OR ".join(parts) + ")"
 
     return query, params
 
@@ -94,6 +94,7 @@ def hand_info():
             s.nickname,
             s.bigblind,
             h.hand_id,
+            h.startdate,
             GROUP_CONCAT(ht.tag_id) AS tag_ids
         FROM Session s
         JOIN Hand h ON s.session_id = h.session_id
@@ -128,5 +129,13 @@ def get_favourite_hands():
         JOIN Session s ON h.session_id = s.session_id
         WHERE ht.tag_id = 1 AND p.name = s.nickname
         ORDER BY h.startdate DESC;
+    """
+    return query
+
+def get_stakes():
+    query = """
+        SELECT DISTINCT bigblind, tablename LIKE 'ANTE%' AS ante
+        FROM Session
+        ORDER BY bigblind
     """
     return query

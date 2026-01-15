@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_plotly_events import plotly_events
-from data.handle_data import load_profit_data
-from utils import select_profit_series, compute_summary_stats
+from data.handle_data import load_profit_data, load_stakes
+from utils import select_profit_series, compute_summary_stats, stake_label
 from plots.profit_plot import build_profit_figure
 from hand_history.hand_history import hand
 
@@ -11,13 +11,29 @@ def main():
 
     # Filters
     st.sidebar.header("Filters")
-    unit = st.sidebar.radio("Display unit:", ["Big Blinds", "€"])
+    unit = st.sidebar.radio("Display unit:", ["Big Blinds", "€"], horizontal=True)
     show_showdown = st.sidebar.checkbox("Showdown/Non SD Winnings", False)
 
     start_date = st.sidebar.date_input("Start date", value=None)
     end_date = st.sidebar.date_input("End date", value=None)
 
-    df = load_profit_data(start_date, end_date)
+    stake_df = load_stakes()
+
+    stake_options = {
+        stake_label(row.bigblind, row.ante): (row.bigblind, row.ante)
+        for row in stake_df.itertuples(index=False)
+    }
+
+    selected_labels = st.sidebar.multiselect(
+        "Stakes",
+        options=list(stake_options.keys())
+    )
+
+    stakes = [
+        stake_options[label] for label in selected_labels
+    ]
+
+    df = load_profit_data(start_date, end_date, stakes)
 
     if df.empty:
         st.warning("No data found — check your database or filters.")

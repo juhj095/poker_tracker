@@ -3,7 +3,8 @@ from hand_history.render_hand import render_hand_history
 from data.handle_data import load_actions, load_boards, load_players, load_hand_info, mark_hand_favourite, unmark_hand_favourite, load_favourite_hands
 from utils import format_multiple_cards
 def hand(update_url: bool=False):
-    bet_unit = st.sidebar.radio("Bet display:", ["Big Blinds", "€"], horizontal=True)
+    st.sidebar.header("Hands")
+    bet_unit = st.sidebar.radio("Bet unit:", ["Big Blinds", "€"], horizontal=True)
     hide_names = st.sidebar.checkbox("Hide names", value=False)
 
     st.sidebar.header("Hand Tags")
@@ -41,8 +42,10 @@ def hand(update_url: bool=False):
     if is_favourite:
         if st.button("Unmark as Favourite"):
             unmark_hand_favourite(hand_id)
+            st.rerun()
     else:
         if st.button("Mark as Favourite"):
             mark_hand_favourite(hand_id)
+            st.rerun()
 
     st.code(hand_text, language="text")

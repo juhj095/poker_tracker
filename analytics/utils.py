@@ -109,3 +109,7 @@ def compute_summary_stats(df):
         "profit_bb": total_profit_bb,
         "bb_per_100": bb_per_100,
     }
+
+def stake_label(bb, ante):
+    stake = int(round(bb * 100))
+    return f"NL{stake} ANTE" if ante else f"NL{stake}"

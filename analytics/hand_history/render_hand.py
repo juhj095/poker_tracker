@@ -2,11 +2,15 @@ from utils import format_multiple_cards, community_cards, format_amount, format_
 from constants import ROUND_NAMES
 from hand_history.render_multiple_runs import render_run_boards
 
-def render_hand_history(actions, board_rows, players, hand, bet_unit, hide_names):
+def render_hand_history(actions, board_rows, players, hand_df, bet_unit, hide_names):
     lines = []
-    hero = hand["nickname"].iloc[0]
-    bigblind = hand["bigblind"].iloc[0]
+    hand = hand_df.iloc[0]
+    hero = hand["nickname"]
+    bigblind = hand["bigblind"]
     hero_row = players.loc[players["name"] == hero]
+
+    lines.append(str(hand["startdate"]))
+    lines.append("")
 
     positioned_players = assign_positions(players.itertuples())
     player_meta = {

@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
-from data.db_helpers import get_connection, profit_over_time, actions_info, boards_info, players_info, hand_info, add_hand_tag, delete_hand_tag, get_favourite_hands
+from data.db_helpers import get_connection, profit_over_time, actions_info, boards_info, players_info, hand_info, add_hand_tag, delete_hand_tag, get_favourite_hands, get_stakes
 
 # TODO load currency and big blind data seperately, saves time
 @st.cache_data(show_spinner="Loading hands…")
-def load_profit_data(start_date, end_date):
+def load_profit_data(start_date, end_date, stakes):
     connection = get_connection()
     query, params = profit_over_time(
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        stakes=stakes
     )
     df = pd.read_sql(query, connection, params=params)
     connection.close()
@@ -66,6 +67,14 @@ def unmark_hand_favourite(hand_id):
 def load_favourite_hands():
     connection = get_connection()
     query = get_favourite_hands()
+    df = pd.read_sql(query, connection)
+    connection.close()
+    return df
+
+@st.cache_data
+def load_stakes():
+    connection = get_connection()
+    query = get_stakes()
     df = pd.read_sql(query, connection)
     connection.close()
     return df
