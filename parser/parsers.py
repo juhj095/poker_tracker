@@ -1,6 +1,5 @@
 from datetime import datetime
 from utils import normalize_cards
-from utils import went_to_showdown
 
 # TODO: other currencies
 
@@ -45,12 +44,10 @@ def parse_session(root):
 def parse_hand(game):
     gamecode = game.attrib.get("gamecode")
     startdate = datetime.strptime(game.findtext("general/startdate"),  "%d.%m.%Y %H:%M:%S")
-    showdown = went_to_showdown(game)
 
     return {
         "gamecode": gamecode,
-        "startdate": startdate,
-        "showdown": showdown
+        "startdate": startdate
     }
 
 def parse_player(player):

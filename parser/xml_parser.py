@@ -3,7 +3,7 @@ from lxml import etree
 
 from db_helpers import get_session_id_by_code, insert_session, insert_hand, insert_player, insert_round, insert_action, insert_pocket_cards, insert_board, insert_profit
 from parsers import parse_session, parse_hand, parse_player, parse_action, parse_boards
-from utils import normalize_cards, calculate_profit
+from utils import normalize_cards, calculate_profit, went_to_showdown
 
 def xml_parser(cursor, xml_path):
     tree = etree.parse(xml_path)
@@ -23,6 +23,7 @@ def xml_parser(cursor, xml_path):
     else:
         # Insert session
         session_data = parse_session(root)
+        hero_name = session_data["nickname"]
 
         session_id = insert_session(cursor, (
             sessioncode,
@@ -36,7 +37,7 @@ def xml_parser(cursor, xml_path):
             session_data["gamecount"],
             session_data["startdate"],
             session_data["currency"],
-            session_data["nickname"],
+            hero_name,
             session_data["bets"],
             session_data["wins"],
             session_data["chipsin"],
@@ -53,13 +54,14 @@ def xml_parser(cursor, xml_path):
                 continue
 
             # Insert hands
+            showdown = went_to_showdown(game, hero_name)
             hand_data = parse_hand(game)
             
             hand_id = insert_hand(cursor, (
                 session_id,
                 hand_data["gamecode"],
                 hand_data["startdate"],
-                hand_data["showdown"]
+                showdown
             ))
 
             player_id_map = {}
@@ -86,7 +88,6 @@ def xml_parser(cursor, xml_path):
 
 
             # Insert profit
-            hero_name = session_data["nickname"]
             hero_profit = calculate_profit(hero_name, players_data)
             insert_profit(cursor, hero_profit, hand_id)
         

@@ -26,23 +26,22 @@ def calculate_profit(hero_name, players):
 
     return profit
 
-def went_to_showdown(game):
-    # All players that were dealt in this hand
-    all_players = {p.attrib["name"] for p in game.findall("general/players/player")}
-    total_players = len(all_players)
+def went_to_showdown(game, hero_name):
+    players = [p.attrib["name"] for p in game.findall("general/players/player")]
+    player_set = set(players)
 
-    # All players who folded
-    folded_players = {
-        a.attrib["player"]
-        for a in game.findall(".//action")
-        if a.attrib.get("type") == "0"  # type 0 = fold
-    }
+    # Track who folded at any point
+    folded = set()
+    for a in game.findall(".//action"):
+        if a.attrib.get("type") == "0":  # Fold
+            folded.add(a.attrib.get("player"))
 
-    # Count how many are left
-    remaining_players = total_players - len(folded_players)
-
-    # If everyone except one folded → no showdown
-    if remaining_players <= 1:
+    # 1) Hero must not fold
+    if hero_name in folded:
         return False
-    else:
-        return True
+
+    # 2) At least one OTHER player must not fold
+    others = player_set - {hero_name}
+    others_not_folded = [p for p in others if p not in folded]
+
+    return len(others_not_folded) >= 1
